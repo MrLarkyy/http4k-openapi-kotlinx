@@ -1,0 +1,100 @@
+{
+  "components": {
+    "schemas": {},
+    "securitySchemes": {}
+  },
+  "info": {
+    "description": "",
+    "title": "golden",
+    "version": "v1"
+  },
+  "jsonSchemaDialect": "https://spec.openapis.org/oas/3.1/dialect/base",
+  "openapi": "3.1.0",
+  "paths": {
+    "/items": {
+      "post": {
+        "deprecated": false,
+        "description": "Creates an item from the request body.",
+        "operationId": "postItems",
+        "parameters": [],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {}
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "description": "The created item"
+          },
+          "404": {
+            "description": "No such parent"
+          }
+        },
+        "security": [],
+        "summary": "Create an item",
+        "tags": [
+          ""
+        ]
+      }
+    },
+    "/items/{id}": {
+      "get": {
+        "deprecated": false,
+        "description": "Returns one item by id.",
+        "operationId": "getItems_id",
+        "parameters": [
+          {
+            "description": "Maximum number of results",
+            "in": "query",
+            "name": "limit",
+            "required": false,
+            "schema": {
+              "type": "integer"
+            }
+          },
+          {
+            "description": "Correlation id",
+            "in": "header",
+            "name": "X-Trace",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "description": "The item id",
+            "in": "path",
+            "name": "id",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The item"
+          },
+          "404": {
+            "description": "No such item"
+          }
+        },
+        "security": [],
+        "summary": "Fetch an item",
+        "tags": [
+          ""
+        ]
+      }
+    }
+  },
+  "servers": [
+    {
+      "description": "",
+      "url": "/"
+    }
+  ],
+  "tags": []
+}

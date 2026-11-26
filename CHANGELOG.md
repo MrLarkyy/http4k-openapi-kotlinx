@@ -13,3 +13,5 @@ All notable changes to this project are documented in this file. The format foll
   tested against the lowest, current and newest versions.
 - Public API validation, ktlint and a check that `core` stays free of http4k.
 - Continuous integration on Linux and Windows.
+- Golden-file tests that render real http4k contracts, validate them against the OpenAPI 3.0 / 3.1 schemas and
+  compare them with approved documents.
