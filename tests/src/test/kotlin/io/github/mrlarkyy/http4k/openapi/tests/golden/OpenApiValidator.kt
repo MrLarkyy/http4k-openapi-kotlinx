@@ -14,7 +14,8 @@ import java.util.Locale
 
 /**
  * Validates rendered documents against the official OpenAPI JSON Schemas bundled under `openapi-schemas/`. Every
- * schema is read from the classpath; a reference to any other `http(s)` IRI fails instead of being fetched.
+ * schema is read from the classpath; a reference to any other `http(s)` IRI fails instead of being fetched, except
+ * the `json-schema.org` meta-schemas, which ship inside the validator jar.
  */
 object OpenApiValidator {
     const val MAX_ERRORS = 20
@@ -22,6 +23,7 @@ object OpenApiValidator {
     private const val IRI_PREFIX = "https://spec.openapis.org/oas/"
     private const val RESOURCE_PREFIX = "openapi-schemas/oas/"
     private const val OAS_DIALECT = "https://spec.openapis.org/oas/3.1/dialect/2024-11-10"
+    private const val OAS_DIALECT_BASE = "https://spec.openapis.org/oas/3.1/dialect/base"
     private const val JSON_SCHEMA_ORG_HTTP = "http://json-schema.org/"
     private const val JSON_SCHEMA_ORG_HTTPS = "https://json-schema.org/"
 
@@ -47,7 +49,8 @@ object OpenApiValidator {
         val root = checkVersion(spec, document)
         val anyDialect = spec.anyDialectSchemaIri?.takeIf { declaresForeignDialect(root) }
         val schemaIri = anyDialect ?: spec.schemaIri
-        val raw = (if (anyDialect != null) load(anyDialect) else schema(spec)).validate(document, InputFormat.JSON)
+        val checked = if (anyDialect == null && declaresDefaultDialect(root)) withoutDialect(root) else document
+        val raw = (if (anyDialect != null) load(anyDialect) else schema(spec)).validate(checked, InputFormat.JSON)
         val errors = raw.sortedWith(compareBy({ it.instanceLocation.toString() }, { it.message }))
         if (errors.isEmpty()) return
         val listed = errors.take(MAX_ERRORS).joinToString("\n") { "  ${it.instanceLocation}: ${it.message}" }
@@ -61,10 +64,17 @@ object OpenApiValidator {
 
     private fun schema(spec: OpenApiSpec): Schema = checkNotNull(schemas[spec]).value
 
+    private fun declaredDialect(root: JsonObject): String? = (root["jsonSchemaDialect"] as? JsonPrimitive)?.takeIf { it.isString }?.content
+
     private fun declaresForeignDialect(root: JsonObject): Boolean {
-        val dialect = (root["jsonSchemaDialect"] as? JsonPrimitive)?.takeIf { it.isString }?.content
-        return dialect != null && dialect != OAS_DIALECT
+        val dialect = declaredDialect(root)
+        return dialect != null && dialect != OAS_DIALECT && dialect != OAS_DIALECT_BASE
     }
+
+    // schema-base pins jsonSchemaDialect to the dated dialect only, while the undated "base" IRI names the same dialect.
+    private fun declaresDefaultDialect(root: JsonObject): Boolean = declaredDialect(root) == OAS_DIALECT_BASE
+
+    private fun withoutDialect(root: JsonObject): String = JsonObject(root - "jsonSchemaDialect").toString()
 
     private fun checkVersion(
         spec: OpenApiSpec,

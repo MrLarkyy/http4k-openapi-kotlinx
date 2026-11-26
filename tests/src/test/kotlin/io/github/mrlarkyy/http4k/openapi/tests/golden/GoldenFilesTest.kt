@@ -108,6 +108,31 @@ class GoldenFilesTest {
     }
 
     @Test
+    fun `approving an upper entry without a lower approval fails and names the lowest-first command`() {
+        put("a.current.json", "old\n")
+        put("b.newest.json", "old\n")
+
+        for ((entry, name) in listOf(MatrixEntry.CURRENT to "a", MatrixEntry.NEWEST to "b")) {
+            val failure = assertFailsWith<IllegalStateException>(entry.id) { files(entry).approve(name, "x\n") }
+            assertTrue(":tests:test :tests:testCurrent :tests:testNewest" in failure.message.orEmpty(), failure.message)
+            assertFalse(Files.exists(dir.resolve("$name.json")))
+        }
+        assertEquals("old\n", Files.readString(dir.resolve("a.current.json")))
+        assertEquals("old\n", Files.readString(dir.resolve("b.newest.json")))
+    }
+
+    @Test
+    fun `approving all entries in order creates the shared file before the overrides`() {
+        files(MatrixEntry.LOWEST).approve("a", "base\n")
+        files(MatrixEntry.CURRENT).approve("a", "base\n")
+        files(MatrixEntry.NEWEST).approve("a", "newest\n")
+
+        assertEquals("base\n", Files.readString(dir.resolve("a.json")))
+        assertFalse(Files.exists(dir.resolve("a.current.json")))
+        assertEquals("newest\n", Files.readString(dir.resolve("a.newest.json")))
+    }
+
+    @Test
     fun `bad names are rejected`() {
         val files = files(MatrixEntry.LOWEST)
 

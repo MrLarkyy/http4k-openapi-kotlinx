@@ -16,5 +16,8 @@ The set is closed: every `$ref` and `$schema` that is not a JSON Schema meta-sch
 validator) resolves to one of these files. The vocabulary identifier `https://spec.openapis.org/oas/3.1/vocab/base`
 is only a name and has no document.
 
-The 3.1 documents are validated against `schema-base`, so Schema Objects are checked against the OpenAPI 3.1 dialect.
-The validator evaluates it offline; the vocabulary identifier needs no document.
+A 3.1 document is validated against `schema-base`, so its Schema Objects are checked against the OpenAPI 3.1 dialect,
+when it declares no `jsonSchemaDialect`, the dated `.../dialect/2024-11-10`, or the undated `.../dialect/base` (which
+`schema-base` does not accept, so the harness removes that field from a copy before validating). A document declaring
+any other `jsonSchemaDialect` is validated against the generic `schema`, which does not check Schema Objects. The
+validator evaluates everything offline; the vocabulary identifier needs no document.

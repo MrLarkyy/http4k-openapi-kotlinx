@@ -30,6 +30,9 @@ class GoldenFiles(
     /**
      * Records [canonical] as the approved output of this entry: the own override file is written only when the output
      * differs from what the entries below it already approve, and a stale override is deleted.
+     *
+     * @throws IllegalStateException when an entry above the lowest approves a golden that no lower entry has approved
+     *   yet, because the shared file written instead would stay hidden behind an existing override
      */
     fun approve(
         name: String,
@@ -41,7 +44,7 @@ class GoldenFiles(
         val inherited = inheritedFiles.firstOrNull { Files.isRegularFile(it) }?.let { read(it) }
         when {
             own == null -> write(fileFor(name, null), canonical)
-            inherited == null -> write(fileFor(name, null), canonical)
+            inherited == null -> throw missingLowerApproval(name)
             inherited == normalise(canonical) -> Files.deleteIfExists(fileFor(name, own))
             else -> write(fileFor(name, own), canonical)
         }
@@ -55,6 +58,13 @@ class GoldenFiles(
         requireValidName(name)
         return write(receivedDir.resolve("$name.${entry.id}.json"), canonical)
     }
+
+    private fun missingLowerApproval(name: String) =
+        IllegalStateException(
+            "Cannot approve golden '$name' for entry ${entry.id}: no lower entry has approved it. " +
+                "Approve the lowest entry first: ./gradlew :tests:test :tests:testCurrent :tests:testNewest " +
+                "-PapproveGolden=true",
+        )
 
     private fun fileFor(
         name: String,
