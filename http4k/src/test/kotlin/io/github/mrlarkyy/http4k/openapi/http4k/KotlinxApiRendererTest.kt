@@ -3,7 +3,6 @@ package io.github.mrlarkyy.http4k.openapi.http4k
 import io.github.mrlarkyy.http4k.openapi.http4k.internal.JsonSchemaAccess
 import io.github.mrlarkyy.http4k.openapi.http4k.internal.SchemaFixtures
 import kotlinx.serialization.ExperimentalSerializationApi
-import kotlinx.serialization.SerializationException
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.JsonElement
 import kotlinx.serialization.json.JsonNamingStrategy
@@ -13,10 +12,9 @@ import kotlinx.serialization.json.jsonObject
 import org.http4k.contract.contract
 import org.http4k.contract.jsonschema.JsonSchema
 import org.http4k.contract.meta
-import org.http4k.contract.openapi.ApiRenderer
 import org.http4k.contract.openapi.OpenApiVersion
-import org.http4k.contract.openapi.v3.Api
 import org.http4k.contract.openapi.v3.OpenApi3
+import org.http4k.contract.openapi.v3.OpenApi3ApiRenderer
 import org.http4k.core.Body
 import org.http4k.core.Method.GET
 import org.http4k.core.Method.POST
@@ -37,7 +35,7 @@ import kotlin.test.assertTrue
 
 class KotlinxApiRendererTest {
     private val subject = KotlinxApiRenderer(KotlinxSerialization)
-    private val http4k = ApiRenderer.Auto<Api<JsonElement>, JsonElement>(KotlinxSerialization)
+    private val http4k = OpenApi3ApiRenderer(KotlinxSerialization)
     private val item = SchemaFixtures.Item("a", 1, 2L, 1.5, true, SchemaFixtures.Inner("x"))
 
     @Test
@@ -128,8 +126,10 @@ class KotlinxApiRendererTest {
     }
 
     @Test
-    fun `a class without a serializer fails as in http4k`() {
-        assertFailsWith<SerializationException> { subject.toSchema(SchemaFixtures.NotSerializable("a"), null, null) }
+    fun `a class without a serializer is rendered as http4k renders it`() {
+        val example = SchemaFixtures.NotSerializable("a")
+
+        assertEquals(outcome { http4k.toSchema(example, null, null) }, outcome { subject.toSchema(example, null, null) })
     }
 
     @Test
@@ -147,6 +147,46 @@ class KotlinxApiRendererTest {
 
         val message = failure.message.orEmpty()
         assertTrue(message.contains("first.Dup") && message.contains("second.Dup"), message)
+    }
+
+    @Test
+    fun `two classes with one serial name but different properties fail instead of sharing a schema`() {
+        subject.toSchema(SchemaFixtures.SameV1("a"), null, null)
+
+        val failure = assertFailsWith<IllegalStateException> { subject.toSchema(SchemaFixtures.SameV2("b"), null, null) }
+
+        assertTrue(failure.message.orEmpty().contains("Schema name 'Same' is used by two different schemas"), failure.message)
+    }
+
+    @Test
+    fun `a schema that http4k renders under a name this renderer uses fails`() {
+        subject.toSchema(item, null, null)
+        val example: JsonElement = parse("""{"other":1}""")
+
+        val failure = assertFailsWith<IllegalStateException> { subject.toSchema(example, "Item", null) }
+
+        assertTrue(failure.message.orEmpty().contains("Schema name 'Item' is used by two different schemas"), failure.message)
+    }
+
+    @Test
+    fun `a value class example fails because its JSON is a primitive`() {
+        val failure = assertFailsWith<IllegalArgumentException> { subject.toSchema(SchemaFixtures.Id("a"), null, null) }
+
+        assertTrue(failure.message.orEmpty().contains("inline CLASS not supported yet"), failure.message)
+    }
+
+    @Test
+    fun `a long schema name is shortened in the message`() {
+        val long = "x".repeat(300)
+        subject.toSchema(item, long, null)
+
+        val failure =
+            assertFailsWith<IllegalStateException> {
+                subject.toSchema(SchemaFixtures.Wrapper(SchemaFixtures.Inner("y"), "l"), long, null)
+            }
+
+        val message = failure.message.orEmpty()
+        assertTrue(message.contains("...") && !message.contains("x".repeat(250)), message)
     }
 
     @Test

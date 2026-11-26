@@ -1,8 +1,6 @@
 package io.github.mrlarkyy.http4k.openapi.tests.golden
 
 import kotlinx.serialization.Serializable
-import kotlinx.serialization.json.Json
-import kotlinx.serialization.json.JsonElement
 import org.http4k.contract.ContractRoute
 import org.http4k.contract.RouteMetaDsl
 import org.http4k.contract.div
@@ -22,8 +20,8 @@ import org.http4k.lens.int
 import org.http4k.lens.string
 
 /**
- * One contract in two forms: with `@Serializable` examples, and with the same examples as JSON objects, which is the
- * only form http4k renders correctly itself.
+ * One contract with `@Serializable` examples, rendered by `KotlinxApiRenderer` and, to compare, by the stock
+ * `OpenApi3ApiRenderer`.
  */
 object SerializableContract {
     @Serializable
@@ -59,16 +57,6 @@ object SerializableContract {
         )
     }
 
-    /** The same routes with the examples given as JSON objects. */
-    fun jsonObjectRoutes(): List<ContractRoute> {
-        val lens = Body.auto<JsonElement>().toLens()
-        val example = Json.encodeToJsonElement(Item.serializer(), item)
-        return routes(
-            requestBody = { receiving(lens to example) },
-            okResponse = { returning(OK, lens to example) },
-        )
-    }
-
     private fun routes(
         requestBody: RouteMetaDsl.() -> Unit,
         okResponse: RouteMetaDsl.() -> Unit,
@@ -80,6 +68,7 @@ object SerializableContract {
         val create =
             "/items" meta {
                 summary = "Create an item"
+                tags += RouteTags.of("items", "Item operations")
                 description = "Creates an item from the request body."
                 requestBody()
                 okResponse()
@@ -88,6 +77,7 @@ object SerializableContract {
         val fetch =
             "/items" / id meta {
                 summary = "Fetch an item"
+                tags += RouteTags.of("items", "Item operations")
                 description = "Returns one item by id."
                 queries += limit
                 headers += trace

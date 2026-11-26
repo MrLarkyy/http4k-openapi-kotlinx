@@ -93,6 +93,28 @@ class DescriptorWalkerTest {
     }
 
     @Test
+    fun `a value class root fails because its JSON is a primitive`() {
+        val failure = assertFailsWith<IllegalArgumentException> { walker.walk(SchemaFixtures.Id.serializer().descriptor) }
+
+        assertTrue(failure.message.orEmpty().contains("inline CLASS not supported yet"), failure.message)
+    }
+
+    @Test
+    fun `two classes with one serial name but different properties fail`() {
+        val failure = assertFailsWith<IllegalStateException> { walker.walk(SchemaFixtures.WrapsSame.serializer().descriptor) }
+
+        assertTrue(failure.message.orEmpty().contains("Schema name 'Same' is used by two descriptors"), failure.message)
+    }
+
+    @Test
+    fun `a long serial name is shortened in the message`() {
+        val failure = assertFailsWith<IllegalArgumentException> { walker.walk(SchemaFixtures.LongNamed.serializer().descriptor) }
+
+        val message = failure.message.orEmpty()
+        assertTrue(message.contains("...") && message.length < 300, message)
+    }
+
+    @Test
     fun `nesting deeper than 32 levels fails and 32 levels still walk`() {
         assertEquals(33, walker.walk(chain(33)).definitions.size)
 

@@ -2,6 +2,7 @@ package io.github.mrlarkyy.http4k.openapi.http4k
 
 import io.github.mrlarkyy.http4k.openapi.http4k.internal.DefinitionRegistry
 import io.github.mrlarkyy.http4k.openapi.http4k.internal.DescriptorWalker
+import io.github.mrlarkyy.http4k.openapi.http4k.internal.JsonSchemaAccess
 import io.github.mrlarkyy.http4k.openapi.http4k.internal.JsonSchemaFactory
 import io.github.mrlarkyy.http4k.openapi.http4k.internal.SchemaNames
 import io.github.mrlarkyy.http4k.openapi.http4k.internal.WalkedSchema
@@ -11,7 +12,6 @@ import kotlinx.serialization.ExperimentalSerializationApi
 import kotlinx.serialization.descriptors.SerialDescriptor
 import kotlinx.serialization.descriptors.StructureKind
 import kotlinx.serialization.json.JsonElement
-import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.serializerOrNull
 import org.http4k.contract.jsonschema.JsonSchema
 import org.http4k.contract.openapi.ApiRenderer
@@ -31,16 +31,23 @@ import java.util.concurrent.ConcurrentHashMap
  *
  * http4k asks for a schema of the example of each body, so a body needs an example, for instance
  * `receiving(lens to Item("a"))`. A schema is named after the serial name of the type without its package, so
- * `@SerialName("shop.Item")` gives `Item`; the same type in several routes gives one schema, and two types that
- * would share a name fail instead of silently overwriting each other.
+ * `@SerialName("shop.Item")` gives `Item`; the same type in several routes gives one schema. When two different
+ * schemas would get one name, including a schema that http4k rendered for another example, rendering fails with an
+ * [IllegalStateException] instead of one schema silently overwriting the other.
  *
  * Supported for now: classes and objects whose properties are non-null, non-optional strings, booleans, ints, longs,
- * doubles or further such classes (also recursive ones). Every other property kind, nullable or optional properties and
- * a [json] with a naming strategy fail with an exception that names the serial name and the property. Examples that are
- * JSON elements, or whose type is not a class or object, are rendered by http4k as without this renderer. An example of
- * a sealed subtype is rendered as that concrete class, without a discriminator.
+ * doubles or further such classes. Everything else fails with an [IllegalArgumentException] that names the serial name
+ * and the property: nullable and optional properties, lists, maps, enums, floats, polymorphic properties, value
+ * classes (as property or as example) and a [json] with a naming strategy. A class that refers to itself therefore fails
+ * too, because it needs a nullable or collection property.
  *
- * An instance owns its state (name registry and descriptor cache, at most 4096 schemas) and is safe for concurrent use.
+ * Examples that this renderer cannot read a descriptor from, such as JSON elements, strings, numbers, generic classes
+ * or types without a class or object descriptor, are rendered by http4k's [OpenApi3ApiRenderer] as without this
+ * renderer, which also covers the probe that http4k renders first. The example of a subtype of a sealed or open
+ * hierarchy is rendered as that concrete class, without a discriminator.
+ *
+ * Use one instance per contract: an instance owns its name registry and descriptor cache (at most 4096 schemas), which
+ * are what detect name collisions, and it is safe for concurrent use.
  *
  * @param json the http4k kotlinx.serialization format of the contract; its serializers module finds the serializers.
  */
@@ -51,11 +58,10 @@ public class KotlinxApiRenderer
         private val json: ConfigurableKotlinxSerialization = KotlinxSerialization,
     ) : ApiRenderer<Api<JsonElement>, JsonElement> {
         private val openApi3 = OpenApi3ApiRenderer(json)
-        private val auto = ApiRenderer.Auto<Api<JsonElement>, JsonElement>(json)
         private val walker = DescriptorWalker()
         private val registry = DefinitionRegistry()
         private val factory = JsonSchemaFactory.resolve()
-        private val walked = ConcurrentHashMap<SerialDescriptor, WalkedSchema>()
+        private val walked = ConcurrentHashMap<Class<*>, WalkedSchema>()
 
         init {
             require(json.json.configuration.namingStrategy == null) {
@@ -76,11 +82,13 @@ public class KotlinxApiRenderer
             overrideDefinitionId: String?,
             refModelNamePrefix: String?,
         ): JsonSchema<JsonElement> {
-            val descriptor = objectDescriptorOf(obj) ?: return delegate(obj, overrideDefinitionId, refModelNamePrefix)
-            val cached = walked[descriptor]
-            val schema = cached ?: walker.walk(descriptor)
+            val cached = walked[obj.javaClass]
+            val schema =
+                cached
+                    ?: objectDescriptorOf(obj)?.let(walker::walk)
+                    ?: return delegate(obj, overrideDefinitionId, refModelNamePrefix)
             val rendered = render(schema, overrideDefinitionId, refModelNamePrefix)
-            if (cached == null) walked.putIfAbsent(descriptor, schema)
+            if (cached == null) walked.putIfAbsent(obj.javaClass, schema)
             return rendered
         }
 
@@ -90,14 +98,16 @@ public class KotlinxApiRenderer
             return serializer.descriptor.takeIf { it.kind == StructureKind.CLASS || it.kind == StructureKind.OBJECT }
         }
 
-        // http4k probes with an anonymous object whether the renderer tells examples apart; kotlinx cannot serialise one.
         private fun delegate(
             obj: Any,
             overrideDefinitionId: String?,
             refModelNamePrefix: String?,
         ): JsonSchema<JsonElement> {
-            val example: Any = if (obj.javaClass.isAnonymousClass) JsonObject(emptyMap()) else obj
-            return auto.toSchema(example, overrideDefinitionId, refModelNamePrefix)
+            val schema = openApi3.toSchema(obj, overrideDefinitionId, refModelNamePrefix)
+            for ((name, definition) in JsonSchemaAccess.definitions(schema)) {
+                registry.register(name, DefinitionRegistry.DELEGATED, definition)
+            }
+            return schema
         }
 
         private fun render(
@@ -113,10 +123,10 @@ public class KotlinxApiRenderer
             val definitions = LinkedHashMap<String, JsonElement>(schema.definitions.size * 2)
             for ((name, definition) in schema.definitions) {
                 val documentName = documentName(name)
-                registry.register(documentName, definition.descriptor)
-                val previous = definitions.put(documentName, definition.model.toJson(::documentName))
-                check(previous == null) {
-                    "Schema name '$documentName' is used twice by ${SchemaNames.shorten(schema.root)}"
+                val json = definition.model.toJson(::documentName)
+                registry.register(documentName, definition.descriptor.serialName, json)
+                check(definitions.put(documentName, json) == null) {
+                    "Schema name '${SchemaNames.shorten(documentName)}' is used twice by ${SchemaNames.shorten(schema.root)}"
                 }
             }
             return factory.create(schemaRef(documentName(schema.root)), definitions)

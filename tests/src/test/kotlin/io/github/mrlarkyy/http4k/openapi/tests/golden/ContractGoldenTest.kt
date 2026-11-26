@@ -62,6 +62,7 @@ class ContractGoldenTest {
         val get =
             "/items" / id meta {
                 summary = "Fetch an item"
+                tags += RouteTags.of("items", "Item operations")
                 description = "Returns one item by id."
                 queries += limit
                 headers += trace
@@ -72,6 +73,7 @@ class ContractGoldenTest {
         val create =
             "/items" meta {
                 summary = "Create an item"
+                tags += RouteTags.of("items", "Item operations")
                 description = "Creates an item from the request body."
                 receiving(body)
                 returning(CREATED to "The created item")

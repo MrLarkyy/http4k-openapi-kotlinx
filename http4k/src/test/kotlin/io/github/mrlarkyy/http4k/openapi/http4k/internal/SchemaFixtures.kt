@@ -110,6 +110,35 @@ internal object SchemaFixtures {
         val value: String,
     )
 
+    @Serializable
+    @SerialName("Same")
+    data class SameV1(
+        val id: String,
+    )
+
+    @Serializable
+    @SerialName("Same")
+    data class SameV2(
+        val key: String,
+    )
+
+    @Serializable
+    data class WrapsSame(
+        val first: SameV1,
+        val second: SameV2,
+    )
+
+    @Serializable
+    @SerialName(LONG_NAME)
+    data class LongNamed(
+        val value: String?,
+    )
+
+    const val LONG_NAME =
+        "p.0123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789" +
+            "0123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789" +
+            "0123456789012345678901234567890123456789"
+
     data class NotSerializable(
         val value: String,
     )

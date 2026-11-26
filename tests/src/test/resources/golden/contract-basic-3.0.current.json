@@ -35,7 +35,7 @@
         "security": [],
         "summary": "Create an item",
         "tags": [
-          ""
+          "items"
         ]
       }
     },
@@ -84,7 +84,7 @@
         "security": [],
         "summary": "Fetch an item",
         "tags": [
-          ""
+          "items"
         ]
       }
     }
@@ -95,5 +95,10 @@
       "url": "/"
     }
   ],
-  "tags": []
+  "tags": [
+    {
+      "description": "Item operations",
+      "name": "items"
+    }
+  ]
 }

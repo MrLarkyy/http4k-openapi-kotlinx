@@ -18,8 +18,9 @@ internal class DescriptorWalker(
     private val maxDepth: Int = MAX_DEPTH,
     private val maxDefinitions: Int = MAX_DEFINITIONS,
 ) {
-    /** Walks [root], which must be a class or an object. */
+    /** Walks [root], which must be a class or an object but not a value class, whose JSON is its single property. */
     fun walk(root: SerialDescriptor): WalkedSchema {
+        require(!root.isInline) { "${SchemaNames.shorten(root.serialName)}: inline ${root.kind} not supported yet" }
         require(isObjectLike(root.kind)) { "${SchemaNames.shorten(root.serialName)}: ${root.kind} not supported yet" }
         val run = Run()
         val rootName = run.visit(root, 0)
@@ -37,9 +38,9 @@ internal class DescriptorWalker(
             val name = SchemaNames.of(descriptor)
             val known = seen[name]
             if (known != null) {
-                check(known == descriptor) {
-                    "Schema name '$name' is used by two descriptors: '${SchemaNames.shorten(known.serialName)}' and " +
-                        "'${SchemaNames.shorten(descriptor.serialName)}'"
+                check(known == descriptor && sameElementNames(known, descriptor)) {
+                    "Schema name '${SchemaNames.shorten(name)}' is used by two descriptors: " +
+                        "'${SchemaNames.shorten(known.serialName)}' and '${SchemaNames.shorten(descriptor.serialName)}'"
                 }
                 return name
             }
@@ -99,6 +100,12 @@ internal class DescriptorWalker(
             child.kind in supportedPrimitives || isObjectLike(child.kind) -> null
             else -> child.kind.toString()
         }
+
+    // Descriptor equality ignores element names, so two types with one serial name would otherwise be taken as one.
+    private fun sameElementNames(
+        first: SerialDescriptor,
+        second: SerialDescriptor,
+    ): Boolean = (0 until first.elementsCount).all { first.getElementName(it) == second.getElementName(it) }
 
     private fun isObjectLike(kind: SerialKind): Boolean = kind == StructureKind.CLASS || kind == StructureKind.OBJECT
 

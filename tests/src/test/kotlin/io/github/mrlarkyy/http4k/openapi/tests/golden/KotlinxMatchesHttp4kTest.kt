@@ -14,8 +14,8 @@ import kotlin.test.Test
 import kotlin.test.assertEquals
 
 /**
- * Compares the document of `@Serializable` examples with the one http4k renders itself for the same examples given as
- * JSON objects (http4k cannot render `@Serializable` examples). Only http4k's known deviations are normalised: it names
+ * Compares the document of `KotlinxApiRenderer` for a contract with `@Serializable` examples with the one the stock
+ * `OpenApi3ApiRenderer` renders for the same contract. Only http4k's known deviations are normalised: it names
  * schemas `object<hash>`, adds an `example` to every property and always writes an empty `required`.
  */
 class KotlinxMatchesHttp4kTest {
@@ -31,7 +31,7 @@ class KotlinxMatchesHttp4kTest {
 
     private fun assertMatches(spec: OpenApiSpec) {
         val ours = renderOurs(spec)
-        val http4k = parse(ContractFixtures.render(spec, SerializableContract.jsonObjectRoutes()))
+        val http4k = parse(ContractFixtures.render(spec, SerializableContract.serializableRoutes()))
 
         assertEquals(canonical(parametersOf(http4k)), canonical(parametersOf(ours)), "parameters of $spec")
         assertEquals(canonical(withoutRequired(http4kNormalised(http4k))), canonical(withoutRequired(ours)), "document of $spec")

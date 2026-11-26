@@ -1,38 +1,56 @@
 package io.github.mrlarkyy.http4k.openapi.http4k.internal
 
-import kotlinx.serialization.descriptors.SerialDescriptor
+import kotlinx.serialization.json.JsonElement
 import java.util.concurrent.ConcurrentHashMap
 
 /**
- * Remembers which descriptor owns each schema name of one renderer, so two types can never share a name.
+ * Remembers which schema owns each schema name of one renderer, so two different schemas can never share a name.
  *
- * Safe for concurrent use without locking: the first descriptor registered under a name wins and every other thread
+ * A schema is identified by its source (a serial name, or [DELEGATED] for schemas that http4k rendered) and its JSON,
+ * because kotlinx descriptors of two types with one serial name compare equal even when their elements differ.
+ *
+ * Safe for concurrent use without locking: the first schema registered under a name wins and every other thread
  * compares against it.
  */
 internal class DefinitionRegistry(
     private val maxDefinitions: Int = DescriptorWalker.MAX_DEFINITIONS,
 ) {
-    private val owners = ConcurrentHashMap<String, SerialDescriptor>()
+    private data class Owner(
+        val source: String,
+        val schema: JsonElement,
+    )
 
-    /** Registers [descriptor] under [name]; fails when another descriptor owns [name] or the registry is full. */
+    private val owners = ConcurrentHashMap<String, Owner>()
+
+    /**
+     * Registers the [schema] that [source] renders under [name]; fails when a different schema owns [name] or the
+     * registry is full.
+     */
     fun register(
         name: String,
-        descriptor: SerialDescriptor,
+        source: String,
+        schema: JsonElement,
     ) {
-        val owner = owners[name] ?: addOrGetOwner(name, descriptor)
-        check(owner == null || owner == descriptor) {
-            "Schema name '$name' is used by two descriptors: '${SchemaNames.shorten(owner?.serialName.orEmpty())}' and " +
-                "'${SchemaNames.shorten(descriptor.serialName)}'"
+        val candidate = Owner(source, schema)
+        val owner = owners[name] ?: addOrGetOwner(name, candidate)
+        check(owner == null || owner == candidate) {
+            "Schema name '${SchemaNames.shorten(name)}' is used by two different schemas: " +
+                "'${SchemaNames.shorten(owner?.source.orEmpty())}' and '${SchemaNames.shorten(source)}'"
         }
     }
 
     private fun addOrGetOwner(
         name: String,
-        descriptor: SerialDescriptor,
-    ): SerialDescriptor? {
+        candidate: Owner,
+    ): Owner? {
         check(owners.size < maxDefinitions) {
-            "${SchemaNames.shorten(descriptor.serialName)}: more than $maxDefinitions schema definitions are not supported"
+            "${SchemaNames.shorten(candidate.source)}: more than $maxDefinitions schema definitions are not supported"
         }
-        return owners.putIfAbsent(name, descriptor)
+        return owners.putIfAbsent(name, candidate)
+    }
+
+    internal companion object {
+        /** The source of schemas that http4k rendered instead of this library. */
+        const val DELEGATED = "http4k"
     }
 }

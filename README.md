@@ -41,14 +41,19 @@ defined once. `required` lists the properties in declaration order.
 
 ### What is supported
 
-- Classes and objects whose properties are `String`, `Boolean`, `Int`, `Long` or `Double`, or further such classes
-  (rendered as `$ref`; recursive classes work).
-- An example of a sealed subtype is rendered as that concrete class, without a discriminator, for now.
-- Examples that are JSON elements, or whose type is not a class or object, are rendered by http4k itself.
+- Classes and objects whose properties are non-null, non-optional `String`, `Boolean`, `Int`, `Long` or `Double`, or
+  further such classes (rendered as `$ref`).
+- An example of a subtype of a sealed or open hierarchy is rendered as that concrete class, without a discriminator.
+- Examples that are JSON elements, strings, numbers, generic classes or anything else without a class or object
+  descriptor are rendered by http4k itself, as without this renderer.
 
 Everything else throws an `IllegalArgumentException` that names the serial name and the property: nullable and
-optional properties, enums, collections, maps, polymorphism and contextual serializers. These are planned. A `Json`
-with a naming strategy is rejected too.
+optional properties (so a class that refers to itself fails too), enums, collections, maps, floats, polymorphic
+properties, value classes (as a property or as the example) and contextual serializers. These are planned. A `Json`
+with a naming strategy is rejected too. Two different schemas that would get one name, also one that http4k rendered,
+throw an `IllegalStateException` instead of overwriting each other.
+
+Use one `KotlinxApiRenderer` per contract: the instance remembers the schema names it has handed out.
 
 ## Supported versions
 
