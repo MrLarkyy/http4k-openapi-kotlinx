@@ -2,6 +2,8 @@ package io.github.mrlarkyy.http4k.openapi.http4k
 
 import io.github.mrlarkyy.http4k.openapi.http4k.internal.JsonSchemaAccess
 import io.github.mrlarkyy.http4k.openapi.http4k.internal.SchemaFixtures
+import io.github.mrlarkyy.http4k.openapi.http4k.internal.definitionOrder
+import io.github.mrlarkyy.http4k.openapi.http4k.internal.node
 import kotlinx.serialization.ExperimentalSerializationApi
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.JsonElement
@@ -12,7 +14,9 @@ import kotlinx.serialization.json.jsonObject
 import org.http4k.contract.contract
 import org.http4k.contract.jsonschema.JsonSchema
 import org.http4k.contract.meta
+import org.http4k.contract.openapi.ApiRenderer
 import org.http4k.contract.openapi.OpenApiVersion
+import org.http4k.contract.openapi.v3.Api
 import org.http4k.contract.openapi.v3.OpenApi3
 import org.http4k.contract.openapi.v3.OpenApi3ApiRenderer
 import org.http4k.core.Body
@@ -268,6 +272,30 @@ class KotlinxApiRendererTest {
             assertEquals(ref("Item"), content(post.getValue("requestBody")))
             assertEquals(ref("Item"), content(responses.getValue("200")))
         }
+    }
+
+    @Test
+    fun `two routes sharing a definition id for examples that differ in values render as http4k renders them`() {
+        val lens = Body.auto<JsonElement>().toLens()
+
+        fun document(apiRenderer: ApiRenderer<Api<JsonElement>, JsonElement>): JsonElement {
+            val handler =
+                contract {
+                    renderer = OpenApi3(TestApiInfo.create("kotlinx", "v1"), KotlinxSerialization, apiRenderer = apiRenderer)
+                    descriptionPath = "/openapi.json"
+                    routes +=
+                        "/a" meta {
+                            receiving(lens to parse("""{"name":"one"}"""), "Shared")
+                        } bindContract POST to { _: Request -> Response(OK) }
+                    routes +=
+                        "/b" meta {
+                            receiving(lens to parse("""{"name":"two"}"""), "Shared")
+                        } bindContract POST to { _: Request -> Response(OK) }
+                }
+            return Json.parseToJsonElement(handler(Request(GET, "/openapi.json")).bodyString())
+        }
+
+        assertEquals(document(OpenApi3ApiRenderer(KotlinxSerialization)), document(KotlinxApiRenderer()))
     }
 
     private fun content(message: JsonElement): JsonElement =

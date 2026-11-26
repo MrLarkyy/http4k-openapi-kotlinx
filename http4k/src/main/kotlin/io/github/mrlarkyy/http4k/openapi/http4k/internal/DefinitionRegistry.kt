@@ -18,7 +18,10 @@ internal class DefinitionRegistry(
     private data class Owner(
         val source: String,
         val schema: JsonElement,
-    )
+    ) {
+        /** Schemas that http4k rendered may share a name with different JSON: http4k itself keeps the last one. */
+        fun sameAs(other: Owner): Boolean = source == other.source && (source == DELEGATED || schema == other.schema)
+    }
 
     private val owners = ConcurrentHashMap<String, Owner>()
 
@@ -33,7 +36,7 @@ internal class DefinitionRegistry(
     ) {
         val candidate = Owner(source, schema)
         val owner = owners[name] ?: addOrGetOwner(name, candidate)
-        check(owner == null || owner == candidate) {
+        check(owner == null || owner.sameAs(candidate)) {
             "Schema name '${SchemaNames.shorten(name)}' is used by two different schemas: " +
                 "'${SchemaNames.shorten(owner?.source.orEmpty())}' and '${SchemaNames.shorten(source)}'"
         }

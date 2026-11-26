@@ -11,8 +11,6 @@ import java.lang.reflect.Method
 internal object JsonSchemaAccess {
     private val getDefinitions: Method = JsonSchema::class.java.getMethod("getDefinitions")
 
-    fun node(schema: JsonSchema<JsonElement>): JsonElement = schema.node
-
     /** The definitions of [schema] by name, in the order http4k will see them. */
     fun definitions(schema: JsonSchema<JsonElement>): Map<String, JsonElement> {
         val result = LinkedHashMap<String, JsonElement>()
@@ -29,7 +27,4 @@ internal object JsonSchemaAccess {
         }
         return result
     }
-
-    /** The definition names in the order http4k will see them. */
-    fun definitionOrder(schema: JsonSchema<JsonElement>): List<String> = definitions(schema).keys.toList()
 }
