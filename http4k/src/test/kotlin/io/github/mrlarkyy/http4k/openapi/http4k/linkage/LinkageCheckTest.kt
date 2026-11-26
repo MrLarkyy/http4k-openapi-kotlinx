@@ -117,6 +117,49 @@ class LinkageCheckTest {
     }
 
     @Test
+    fun `a lambda for a library interface records the interface method it implements`() {
+        val metafactory =
+            Handle(
+                Opcodes.H_INVOKESTATIC,
+                "java/lang/invoke/LambdaMetafactory",
+                "metafactory",
+                "(Ljava/lang/invoke/MethodHandles\$Lookup;Ljava/lang/String;Ljava/lang/invoke/MethodType;" +
+                    "Ljava/lang/invoke/MethodType;Ljava/lang/invoke/MethodHandle;Ljava/lang/invoke/MethodType;)" +
+                    "Ljava/lang/invoke/CallSite;",
+                false,
+            )
+
+        fun lambdaCaller(
+            name: String,
+            descriptor: String,
+        ) = ClassFixtures.define("t/Subject") {
+            method("m") {
+                visitInvokeDynamicInsn(
+                    name,
+                    "()Ljava/lang/Runnable;",
+                    metafactory,
+                    Type.getMethodType(descriptor),
+                    Handle(Opcodes.H_INVOKESTATIC, "t/Subject", "body", "()V", false),
+                    Type.getMethodType(descriptor),
+                )
+            }
+        }
+
+        val present = LinkageCheck.references(lambdaCaller("run", "()V"), listOf("java/lang/Runnable"))
+        val absent = LinkageCheck.references(lambdaCaller("nope", "()V"), listOf("java/lang/Runnable"))
+
+        assertEquals(
+            setOf(
+                MemberReference("java/lang/Runnable", "", "", Kind.CLASS),
+                MemberReference("java/lang/Runnable", "run", "()V", Kind.METHOD),
+            ),
+            present,
+        )
+        assertEquals(listOf("method java/lang/Runnable.nope()V"), missing(*absent.toTypedArray()))
+        assertTrue(missing(*present.toTypedArray()).isEmpty())
+    }
+
+    @Test
     fun `class references from supertypes, signatures and instructions are collected`() {
         val bytes =
             ClassFixtures.define("t/Subject", superName = "p/Base", interfaces = listOf("p/Iface")) {

@@ -17,6 +17,7 @@ import java.lang.reflect.Modifier
  */
 internal object LinkageCheck {
     private const val ASM_API = Opcodes.ASM9
+    private const val LAMBDA_METAFACTORY = "java/lang/invoke/LambdaMetafactory"
 
     /** Member references in [classBytes] whose owner internal name starts with one of [ownerPrefixes]. */
     fun references(
@@ -94,6 +95,17 @@ internal object LinkageCheck {
                     vararg bootstrapMethodArguments: Any?,
                 ) {
                     addHandle(bootstrapMethodHandle)
+                    addType(Type.getMethodType(descriptor))
+                    // A lambda for a SAM interface leaves no class file, so the interface method it implements is recorded here.
+                    val samType = bootstrapMethodArguments.firstOrNull() as? Type
+                    val returnType = Type.getReturnType(descriptor)
+                    if (bootstrapMethodHandle.owner == LAMBDA_METAFACTORY &&
+                        samType != null &&
+                        samType.sort == Type.METHOD &&
+                        returnType.sort == Type.OBJECT
+                    ) {
+                        add(returnType.internalName, name, samType.descriptor, MemberReference.Kind.METHOD)
+                    }
                     bootstrapMethodArguments.forEach {
                         when (it) {
                             is Handle -> addHandle(it)
