@@ -15,3 +15,6 @@ They are unmodified downloads, retrieved on 2026-11-26. Licence: Apache-2.0 (Ope
 The set is closed: every `$ref` and `$schema` that is not a JSON Schema meta-schema (`json-schema.org`, shipped by the
 validator) resolves to one of these files. The vocabulary identifier `https://spec.openapis.org/oas/3.1/vocab/base`
 is only a name and has no document.
+
+The 3.1 documents are validated against `schema-base`, so Schema Objects are checked against the OpenAPI 3.1 dialect.
+The validator evaluates it offline; the vocabulary identifier needs no document.
