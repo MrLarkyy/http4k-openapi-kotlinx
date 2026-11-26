@@ -1,5 +1,6 @@
 plugins {
     id("h4oa.kotlin-library")
+    id("org.jetbrains.kotlin.plugin.serialization")
 }
 
 h4oaLibrary {
@@ -14,6 +15,8 @@ dependencies {
 
 dependencies {
     testImplementation(libs.asm)
+    // http4k's auto body lenses use kotlin.reflect.full, which http4k does not bring in transitively.
+    testImplementation(kotlin("reflect"))
 }
 
 tasks.withType<Test>().configureEach {
