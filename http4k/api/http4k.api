@@ -1,0 +1,9 @@
+public final class io/github/mrlarkyy/http4k/openapi/http4k/KotlinxApiRenderer : org/http4k/contract/openapi/ApiRenderer {
+	public fun <init> ()V
+	public fun <init> (Lorg/http4k/format/ConfigurableKotlinxSerialization;)V
+	public synthetic fun <init> (Lorg/http4k/format/ConfigurableKotlinxSerialization;ILkotlin/jvm/internal/DefaultConstructorMarker;)V
+	public synthetic fun api (Ljava/lang/Object;)Ljava/lang/Object;
+	public fun api (Lorg/http4k/contract/openapi/v3/Api;)Lkotlinx/serialization/json/JsonElement;
+	public fun toSchema (Ljava/lang/Object;Ljava/lang/String;Ljava/lang/String;)Lorg/http4k/contract/jsonschema/JsonSchema;
+}
+

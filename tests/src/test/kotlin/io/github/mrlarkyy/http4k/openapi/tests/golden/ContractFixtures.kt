@@ -1,8 +1,11 @@
 package io.github.mrlarkyy.http4k.openapi.tests.golden
 
+import kotlinx.serialization.json.JsonElement
 import org.http4k.contract.ContractRoute
 import org.http4k.contract.contract
 import org.http4k.contract.openapi.ApiInfo
+import org.http4k.contract.openapi.ApiRenderer
+import org.http4k.contract.openapi.v3.Api
 import org.http4k.contract.openapi.v3.OpenApi3
 import org.http4k.contract.openapi.v3.OpenApi3ApiRenderer
 import org.http4k.core.Method.GET
@@ -18,6 +21,13 @@ object ContractFixtures {
     fun render(
         spec: OpenApiSpec,
         routes: List<ContractRoute>,
+    ): String = render(spec, routes, OpenApi3ApiRenderer(KotlinxSerialization))
+
+    /** Renders the OpenAPI document of a contract with [routes] as [spec], building schemas with [apiRenderer]. */
+    fun render(
+        spec: OpenApiSpec,
+        routes: List<ContractRoute>,
+        apiRenderer: ApiRenderer<Api<JsonElement>, JsonElement>,
     ): String {
         val handler =
             contract {
@@ -25,7 +35,7 @@ object ContractFixtures {
                     OpenApi3(
                         apiInfo(),
                         KotlinxSerialization,
-                        apiRenderer = OpenApi3ApiRenderer(KotlinxSerialization),
+                        apiRenderer = apiRenderer,
                         version = spec.http4k,
                     )
                 descriptionPath = DESCRIPTION_PATH

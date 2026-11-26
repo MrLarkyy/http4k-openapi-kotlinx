@@ -1,6 +1,7 @@
 plugins {
     id("h4oa.kotlin-jvm")
     id("h4oa.version-matrix")
+    id("org.jetbrains.kotlin.plugin.serialization")
 }
 
 dependencies {

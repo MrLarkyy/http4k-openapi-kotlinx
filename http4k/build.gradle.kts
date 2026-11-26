@@ -1,5 +1,6 @@
 plugins {
     id("h4oa.kotlin-library")
+    id("org.jetbrains.kotlin.plugin.serialization")
 }
 
 h4oaLibrary {

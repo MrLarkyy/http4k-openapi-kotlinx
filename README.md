@@ -5,8 +5,57 @@ Generates OpenAPI documents for [http4k](https://www.http4k.org/) contracts from
 
 ## Status
 
-Pre-alpha. The build, module layout and supported version ranges are in place; schema generation is not
-implemented yet, so there is no quick start. The public API is empty and will be declared by later releases.
+Pre-alpha. `KotlinxApiRenderer` builds the schemas of simple `@Serializable` classes for http4k contracts; more
+property kinds follow in later releases.
+
+## Quick start
+
+Pass the renderer to `OpenApi3` and give every body an example. http4k only asks for a schema of the example of a
+body, so a body needs an example.
+
+```kotlin
+@Serializable
+data class Inner(val id: String)
+
+@Serializable
+data class Item(val name: String, val count: Int, val inner: Inner)
+
+val item = Item("pen", 3, Inner("i-1"))
+val lens = Body.auto<Item>().toLens()   // org.http4k.format.KotlinxSerialization.auto
+
+val handler =
+    contract {
+        renderer = OpenApi3(apiInfo, KotlinxSerialization, apiRenderer = KotlinxApiRenderer(KotlinxSerialization))
+        descriptionPath = "/openapi.json"
+        routes +=
+            "/items" meta {
+                receiving(lens to item)
+                returning(OK, lens to item)
+            } bindContract POST to { _: Request -> Response(OK) }
+    }
+```
+
+The document then holds one schema for each type under `components/schemas`, named after the serial name without
+its package (`Item` and `Inner` above), and the bodies refer to it with a `$ref`. A type used by several routes is
+defined once. `required` lists the properties in declaration order.
+
+### What is supported
+
+- Classes and objects whose properties are non-null, non-optional `String`, `Boolean`, `Int`, `Long` or `Double`, or
+  further such classes (rendered as `$ref`).
+- An example of a subtype of a sealed or open hierarchy is rendered as that concrete class, without a discriminator.
+- Examples that are JSON elements, strings, numbers, generic classes or anything else without a class or object
+  descriptor are rendered by http4k itself, as without this renderer.
+
+Everything else throws an `IllegalArgumentException` that names the serial name and the property: nullable and
+optional properties (so a class that refers to itself fails too), enums, collections, maps, floats, polymorphic
+properties, value classes (as a property or as the example) and contextual serializers. These are planned. A `Json`
+with a naming strategy is rejected too. Two different schemas that would get one name throw an
+`IllegalStateException` instead of overwriting each other when at least one of them comes from this renderer, also if
+the other was rendered by http4k. Two different schemas that http4k rendered alone keep http4k's behaviour (the last
+one wins).
+
+Use one `KotlinxApiRenderer` per contract: the instance remembers the schema names it has handed out.
 
 ## Supported versions
 
