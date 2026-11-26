@@ -18,12 +18,16 @@ Formatting is enforced by ktlint (`ktlint_official`). Run `./gradlew ktlintForma
 ## Versions
 
 All versions live in `gradle/libs.versions.toml`. Raising a `-lowest` entry is a breaking change for
-consumers and needs a changelog entry.
+consumers and needs a changelog entry. Library code may only use http4k and kotlinx.serialization API that is
+present across the whole supported range; `Http4kLinkageTest` fails otherwise. It scans the classes of the
+`http4k` module only.
 
 ## Public API
 
-`apiCheck` must stay green. Run `./gradlew apiDump` only for a deliberate API change and commit the updated
-dump together with a changelog entry.
+The Kotlin Gradle plugin ABI validation guards the public API of `core` and `http4k`; the dumps live in
+`<module>/api`. `apiCheck` (alias of `checkKotlinAbi`) must stay green and runs as part of `check`. Run
+`./gradlew apiDump` (alias of `updateKotlinAbi`) only for a deliberate API change and commit the updated dump
+together with a changelog entry.
 
 ## Tests
 

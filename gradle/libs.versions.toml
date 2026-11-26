@@ -3,6 +3,9 @@
 # http4k and kotlinx-serialization have three entries each:
 #   lowest  - the supported lower bound; published modules compile against it and their POMs declare it.
 #             Raising a "-lowest" entry is a breaking change for consumers.
+#             The http4k floor stays 6.0.0.0 although http4k changed the ApiInfo constructor in 6.54.0.0: from
+#             6.54.0.0 on, http4k pulls kotlin-stdlib 2.4.0 and kotlinx-serialization 1.11.0 into consumers.
+#             Library code never constructs ApiInfo, and Http4kLinkageTest checks its http4k references on every entry.
 #   current - the version the project is developed against.
 #   newest  - the newest released version, bumped deliberately (never a dynamic version).
 # The build runs every test suite against all three entries.
@@ -20,8 +23,8 @@ kotlinx-serialization-current = "1.13.0"
 kotlinx-serialization-newest = "1.13.0"
 ktlint = "1.8.0"
 ktlint-gradle = "14.2.0"
-bcv = "0.18.2"
 junit = "6.1.3"
+asm = "9.11.1"
 json-schema-validator = "3.0.9"
 java-diff-utils = "4.18"
 
@@ -31,6 +34,7 @@ kotlinx-serialization-json = { module = "org.jetbrains.kotlinx:kotlinx-serializa
 http4k-core = { module = "org.http4k:http4k-core", version.ref = "http4k-lowest" }
 http4k-api-openapi = { module = "org.http4k:http4k-api-openapi", version.ref = "http4k-lowest" }
 http4k-format-kotlinx-serialization = { module = "org.http4k:http4k-format-kotlinx-serialization", version.ref = "http4k-lowest" }
+asm = { module = "org.ow2.asm:asm", version.ref = "asm" }
 junit-bom = { module = "org.junit:junit-bom", version.ref = "junit" }
 junit-platform-launcher = { module = "org.junit.platform:junit-platform-launcher" }
 kotlin-gradle-plugin = { module = "org.jetbrains.kotlin:kotlin-gradle-plugin", version.ref = "kotlin" }
@@ -40,4 +44,3 @@ java-diff-utils = { module = "io.github.java-diff-utils:java-diff-utils", versio
 
 [plugins]
 ktlint = { id = "org.jlleitschuh.gradle.ktlint", version.ref = "ktlint-gradle" }
-bcv = { id = "org.jetbrains.kotlinx.binary-compatibility-validator", version.ref = "bcv" }

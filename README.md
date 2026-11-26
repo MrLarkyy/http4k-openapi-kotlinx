@@ -18,8 +18,15 @@ implemented yet, so there is no quick start. The public API is empty and will be
 | kotlinx.serialization   | 1.8.0 to 1.13.0                | lowest, current and newest |
 
 The library is compiled against the lowest supported versions and every test suite also runs against the
-current and newest ones. Note that http4k API classes differ between 6.0 and 6.61; the library will adapt
-internally.
+current and newest ones.
+
+http4k changed the `ApiInfo` constructor in 6.54.0.0, so code compiled against an earlier version does not link
+against a later one. Construct `ApiInfo` in your own code against the http4k version you use; the library never
+constructs it. A linkage test checks the http4k and kotlinx.serialization references of the `http4k` module
+against the lowest, current and newest versions.
+
+http4k 6.54.0.0 and newer pull in kotlin-stdlib 2.4.0 and kotlinx-serialization 1.11.0, so projects that stay on
+Kotlin 2.2 need an older http4k.
 
 ## Modules
 
@@ -33,11 +40,11 @@ The `tests` module holds cross-module tests and is not published.
 ## Build
 
 ```bash
-./gradlew build          # compile, ktlint, tests on all version entries, API check
+./gradlew build          # compile, ktlint, tests on all version entries, API check (Kotlin ABI validation)
 ./gradlew ktlintFormat   # fix formatting
 ./gradlew testCurrent   # one matrix entry (testNewest likewise)
-./gradlew apiCheck       # verify the public API against the committed dumps
-./gradlew apiDump        # update the dumps, only for a deliberate API change
+./gradlew apiCheck       # checkKotlinAbi: verify the public API against the committed dumps
+./gradlew apiDump        # updateKotlinAbi: update the dumps, only for a deliberate API change
 ./gradlew :tests:check -PapproveGolden=true   # rewrite approved golden files (refused on CI)
 ```
 

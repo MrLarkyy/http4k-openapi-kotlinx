@@ -16,6 +16,10 @@ fun AttributeContainer.copyFrom(source: AttributeContainer) {
     }
 }
 
+tasks.named<Test>("test") {
+    systemProperty("h4oa.http4k.version", catalog.findVersion("http4k-lowest").get().requiredVersion)
+}
+
 for (entry in listOf("current", "newest")) {
     val http4kVersion = catalog.findVersion("http4k-$entry").get().requiredVersion
     val serializationVersion = catalog.findVersion("kotlinx-serialization-$entry").get().requiredVersion
@@ -44,6 +48,7 @@ for (entry in listOf("current", "newest")) {
         tasks.register<Test>("test$title") {
             description = "Runs the tests against http4k $http4kVersion and kotlinx.serialization $serializationVersion."
             group = "verification"
+            systemProperty("h4oa.http4k.version", http4kVersion)
             testClassesDirs = sourceSets.getByName("test").output.classesDirs
             classpath = sourceSets.getByName("test").output + sourceSets.getByName("main").output + matrixClasspath
         }

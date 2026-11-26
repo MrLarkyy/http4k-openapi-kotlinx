@@ -29,20 +29,11 @@ class Http4kContractSmokeTest {
         val response = handler(Request(GET, "/openapi.json"))
 
         assertEquals(OK, response.status)
-        assertTrue(Regex("\"openapi\"\\s*:\\s*\"3\\.").containsMatchIn(response.bodyString()), response.bodyString())
+        val body = response.bodyString()
+        assertTrue(Regex("\"openapi\"\\s*:\\s*\"3\\.").containsMatchIn(body), body)
+        assertTrue(Regex("\"title\"\\s*:\\s*\"smoke\"").containsMatchIn(body), body)
+        assertTrue(Regex("\"version\"\\s*:\\s*\"v1\"").containsMatchIn(body), body)
     }
 
-    // ApiInfo gained constructor parameters between http4k 6.0.0.0 and 6.61.0.0, so no compiled call (including the
-    // synthetic defaults one) links on both ends of the range; the shortest public constructor is picked reflectively.
-    private fun apiInfo(): ApiInfo {
-        val constructor =
-            ApiInfo::class.java.constructors
-                .filter { constructor -> constructor.parameterTypes.none { it.name.endsWith("DefaultConstructorMarker") } }
-                .minByOrNull { it.parameterCount }
-        checkNotNull(constructor) { "ApiInfo has no public constructor" }
-        val arguments = arrayOfNulls<Any>(constructor.parameterCount)
-        arguments[0] = "smoke"
-        arguments[1] = "v1"
-        return constructor.newInstance(*arguments) as ApiInfo
-    }
+    private fun apiInfo(): ApiInfo = TestApiInfo.create("smoke", "v1")
 }
