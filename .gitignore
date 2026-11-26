@@ -10,3 +10,5 @@ local.properties
 *.gpg
 *.asc
 secring.*
+# Source packages named "build" must stay tracked.
+!**/src/**/build/
