@@ -1,0 +1,14 @@
+.gradle/
+build/
+.kotlin/
+.idea/
+*.iml
+out/
+local.properties
+.env
+.env.*
+*.gpg
+*.asc
+secring.*
+# Source packages named "build" must stay tracked.
+!**/src/**/build/
