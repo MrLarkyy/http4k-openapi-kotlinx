@@ -13,4 +13,7 @@ All notable changes to this project are documented in this file. The format foll
   tested against the lowest, current and newest versions.
 - Public API validation with the built-in ABI validation of the Kotlin Gradle plugin (`apiCheck` and `apiDump`,
   aliases of `checkKotlinAbi` and `updateKotlinAbi`), ktlint and a check that `core` stays free of http4k.
+- Supported http4k range confirmed as 6.0.0.0 to 6.61.0.0 (the `ApiInfo` constructor changed in 6.54.0.0; the
+  library never constructs it); a linkage test checks the http4k and kotlinx.serialization references of the
+  `http4k` module against every tested version.
 - Continuous integration on Linux and Windows.

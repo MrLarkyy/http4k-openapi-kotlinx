@@ -18,7 +18,8 @@ Formatting is enforced by ktlint (`ktlint_official`). Run `./gradlew ktlintForma
 ## Versions
 
 All versions live in `gradle/libs.versions.toml`. Raising a `-lowest` entry is a breaking change for
-consumers and needs a changelog entry.
+consumers and needs a changelog entry. Library code may only use http4k and kotlinx.serialization API that is
+present across the whole supported range; `Http4kLinkageTest` fails otherwise.
 
 ## Public API
 

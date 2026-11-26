@@ -18,8 +18,12 @@ implemented yet, so there is no quick start. The public API is empty and will be
 | kotlinx.serialization   | 1.8.0 to 1.13.0                | lowest, current and newest |
 
 The library is compiled against the lowest supported versions and every test suite also runs against the
-current and newest ones. Note that http4k API classes differ between 6.0 and 6.61; the library will adapt
-internally.
+current and newest ones.
+
+http4k changed the `ApiInfo` constructor in 6.54.0.0, so code compiled against an earlier version does not link
+against a later one. Construct `ApiInfo` in your own code against the http4k version you use; the library never
+constructs it. A linkage test checks the http4k and kotlinx.serialization references of the library against the
+lowest, current and newest versions.
 
 ## Modules
 

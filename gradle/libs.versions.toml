@@ -3,6 +3,9 @@
 # http4k and kotlinx-serialization have three entries each:
 #   lowest  - the supported lower bound; published modules compile against it and their POMs declare it.
 #             Raising a "-lowest" entry is a breaking change for consumers.
+#             The http4k floor stays 6.0.0.0 although http4k changed the ApiInfo constructor in 6.54.0.0: from
+#             6.54.0.0 on, http4k pulls kotlin-stdlib 2.4.0 and kotlinx-serialization 1.11.0 into consumers.
+#             Library code never constructs ApiInfo, and Http4kLinkageTest checks its http4k references on every entry.
 #   current - the version the project is developed against.
 #   newest  - the newest released version, bumped deliberately (never a dynamic version).
 # The build runs every test suite against all three entries.
