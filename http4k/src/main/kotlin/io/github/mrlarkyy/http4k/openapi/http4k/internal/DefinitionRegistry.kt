@@ -4,7 +4,7 @@ import kotlinx.serialization.json.JsonElement
 import java.util.concurrent.ConcurrentHashMap
 
 /**
- * Remembers which schema owns each schema name of one renderer, so two different schemas can never share a name.
+ * Remembers which schema owns each schema name of one renderer, so a name is never shared by two different schemas when one of them comes from this renderer.
  *
  * A schema is identified by its source (a serial name, or [DELEGATED] for schemas that http4k rendered) and its JSON,
  * because kotlinx descriptors of two types with one serial name compare equal even when their elements differ.

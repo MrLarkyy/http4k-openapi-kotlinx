@@ -32,8 +32,9 @@ import java.util.concurrent.ConcurrentHashMap
  * http4k asks for a schema of the example of each body, so a body needs an example, for instance
  * `receiving(lens to Item("a"))`. A schema is named after the serial name of the type without its package, so
  * `@SerialName("shop.Item")` gives `Item`; the same type in several routes gives one schema. When two different
- * schemas would get one name, including a schema that http4k rendered for another example, rendering fails with an
- * [IllegalStateException] instead of one schema silently overwriting the other.
+ * schemas would get one name and at least one of them was built by this renderer (also when the other one was rendered
+ * by http4k), rendering fails with an [IllegalStateException] instead of one schema silently overwriting the other.
+ * Two different schemas that were both rendered by http4k keep http4k's behaviour: the last one wins.
  *
  * Supported for now: classes and objects whose properties are non-null, non-optional strings, booleans, ints, longs,
  * doubles or further such classes. Everything else fails with an [IllegalArgumentException] that names the serial name

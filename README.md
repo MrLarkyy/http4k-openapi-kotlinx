@@ -50,8 +50,10 @@ defined once. `required` lists the properties in declaration order.
 Everything else throws an `IllegalArgumentException` that names the serial name and the property: nullable and
 optional properties (so a class that refers to itself fails too), enums, collections, maps, floats, polymorphic
 properties, value classes (as a property or as the example) and contextual serializers. These are planned. A `Json`
-with a naming strategy is rejected too. Two different schemas that would get one name, also one that http4k rendered,
-throw an `IllegalStateException` instead of overwriting each other.
+with a naming strategy is rejected too. Two different schemas that would get one name throw an
+`IllegalStateException` instead of overwriting each other when at least one of them comes from this renderer, also if
+the other was rendered by http4k. Two different schemas that http4k rendered alone keep http4k's behaviour (the last
+one wins).
 
 Use one `KotlinxApiRenderer` per contract: the instance remembers the schema names it has handed out.
 

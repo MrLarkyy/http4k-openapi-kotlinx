@@ -11,7 +11,8 @@ All notable changes to this project are documented in this file. The format foll
   response examples from their kotlinx.serialization descriptors. It supports classes and objects with `String`,
   `Boolean`, `Int`, `Long` and `Double` properties and nested classes (as `$ref`); other constructs (nullable or
   optional properties, collections, enums, value classes and so on) fail with an `IllegalArgumentException` naming the
-  serial name and the property, and two different schemas with one name fail with an `IllegalStateException`. Examples
+  serial name and the property, and two different schemas with one name fail with an `IllegalStateException` when at
+  least one of them comes from this renderer (two that http4k rendered keep http4k's behaviour). Examples
   without a class or object descriptor, such as JSON elements, are rendered by http4k. Use one renderer per contract.
 - Gradle build skeleton with the `core` and `http4k` library modules and a `tests` module, published as
   `io.github.mrlarkyy:http4k-openapi-kotlinx-core` and `io.github.mrlarkyy:http4k-openapi-kotlinx` (0.1.0-SNAPSHOT).
