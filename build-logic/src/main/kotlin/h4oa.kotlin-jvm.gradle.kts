@@ -32,8 +32,8 @@ ktlint {
 
 dependencies {
     testImplementation(kotlin("test"))
-    testImplementation(platform("org.junit:junit-bom:${catalog.findVersion("junit").get().requiredVersion}"))
-    testRuntimeOnly("org.junit.platform:junit-platform-launcher")
+    testImplementation(platform(catalog.findLibrary("junit-bom").get()))
+    testRuntimeOnly(catalog.findLibrary("junit-platform-launcher").get())
 }
 
 tasks.withType<Test>().configureEach {

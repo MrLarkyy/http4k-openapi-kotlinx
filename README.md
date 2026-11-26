@@ -35,7 +35,7 @@ The `tests` module holds cross-module tests and is not published.
 ```bash
 ./gradlew build          # compile, ktlint, tests on all version entries, API check
 ./gradlew ktlintFormat   # fix formatting
-./gradlew testCurrent testNewest   # run the tests against one matrix entry
+./gradlew testCurrent   # one matrix entry (testNewest likewise)
 ./gradlew apiCheck       # verify the public API against the committed dumps
 ./gradlew apiDump        # update the dumps, only for a deliberate API change
 ```

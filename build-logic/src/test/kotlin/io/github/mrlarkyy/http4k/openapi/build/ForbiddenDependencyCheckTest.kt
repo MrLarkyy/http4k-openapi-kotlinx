@@ -4,11 +4,25 @@ import org.gradle.testkit.runner.GradleRunner
 import java.io.File
 import java.nio.file.Files
 import java.util.jar.JarOutputStream
+import kotlin.test.AfterTest
+import kotlin.test.BeforeTest
 import kotlin.test.Test
 import kotlin.test.assertContains
 import kotlin.test.assertTrue
 
 class ForbiddenDependencyCheckTest {
+    private lateinit var root: File
+
+    @BeforeTest
+    fun createRoot() {
+        root = Files.createTempDirectory("forbidden-check").toFile()
+    }
+
+    @AfterTest
+    fun deleteRoot() {
+        root.deleteRecursively()
+    }
+
     @Test
     fun `fails and names the coordinates when a forbidden module is on the classpath`() {
         val project = newProject(withForbidden = true)
@@ -28,6 +42,47 @@ class ForbiddenDependencyCheckTest {
         assertTrue(File(project, "build/h4oa/ok.txt").isFile, result.output)
     }
 
+    @Test
+    fun `convention plugin fails resolution of a dynamic version`() {
+        val failure = conventionProject("implementation 'org.http4k:fake:1.+'").buildAndFail()
+
+        assertContains(failure.output, "dynamic version")
+    }
+
+    @Test
+    fun `convention plugin fails resolution of a changing version`() {
+        val failure = conventionProject("implementation('org.http4k:fake:1.0') { changing = true }").buildAndFail()
+
+        assertContains(failure.output, "changing version")
+    }
+
+    private fun conventionProject(dependency: String): GradleRunner {
+        val repo = File(root, "repo")
+        publishFake(repo)
+        val catalog = File("../gradle/libs.versions.toml").canonicalFile.invariantSeparatorsPath
+        File(root, "settings.gradle").writeText(
+            """
+            rootProject.name = 'convention'
+            dependencyResolutionManagement {
+                versionCatalogs { create('libs') { from(files('$catalog')) } }
+            }
+            """.trimIndent(),
+        )
+        File(root, "build.gradle").writeText(
+            """
+            plugins { id 'h4oa.kotlin-jvm' }
+            repositories { maven { url = uri('${repo.invariantSeparatorsPath}') } }
+            dependencies { $dependency }
+            tasks.register('resolveCompile') { doLast { configurations.compileClasspath.files } }
+            """.trimIndent(),
+        )
+        return GradleRunner
+            .create()
+            .withProjectDir(root)
+            .withPluginClasspath()
+            .withArguments("resolveCompile", "--stacktrace")
+    }
+
     private fun runner(project: File) =
         GradleRunner
             .create()
@@ -35,7 +90,6 @@ class ForbiddenDependencyCheckTest {
             .withArguments("checkForbidden", "--stacktrace")
 
     private fun newProject(withForbidden: Boolean): File {
-        val root = Files.createTempDirectory("forbidden-check").toFile().also { it.deleteOnExit() }
         val repo = File(root, "repo")
         publishFake(repo)
         File(root, "settings.gradle").writeText("rootProject.name = 'core'\n")
@@ -65,6 +119,15 @@ class ForbiddenDependencyCheckTest {
     private fun publishFake(repo: File) {
         val dir = File(repo, "org/http4k/fake/1.0").apply { mkdirs() }
         JarOutputStream(File(dir, "fake-1.0.jar").outputStream()).close()
+        File(dir.parentFile, "maven-metadata.xml").writeText(
+            """
+            <metadata>
+              <groupId>org.http4k</groupId>
+              <artifactId>fake</artifactId>
+              <versioning><versions><version>1.0</version></versions></versioning>
+            </metadata>
+            """.trimIndent(),
+        )
         File(dir, "fake-1.0.pom").writeText(
             """
             <project xmlns="http://maven.apache.org/POM/4.0.0">

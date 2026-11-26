@@ -3,7 +3,6 @@ package io.github.mrlarkyy.http4k.openapi.build
 import org.gradle.api.DefaultTask
 import org.gradle.api.GradleException
 import org.gradle.api.artifacts.Configuration
-import org.gradle.api.artifacts.component.ModuleComponentIdentifier
 import org.gradle.api.artifacts.result.ResolvedComponentResult
 import org.gradle.api.artifacts.result.ResolvedDependencyResult
 import org.gradle.api.file.RegularFileProperty
@@ -75,7 +74,7 @@ abstract class ForbiddenDependencyCheck : DefaultTask() {
         }
         return seen
             .mapNotNull { component ->
-                (component.id as? ModuleComponentIdentifier)?.let { "${it.group}:${it.module}:${it.version}" }
+                component.moduleVersion?.let { "${it.group}:${it.name}:${it.version}" }
             }.sorted()
     }
 }
