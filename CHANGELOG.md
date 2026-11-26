@@ -17,3 +17,5 @@ All notable changes to this project are documented in this file. The format foll
   library never constructs it); a linkage test checks the http4k and kotlinx.serialization references of the
   `http4k` module against every tested version.
 - Continuous integration on Linux and Windows.
+- Golden-file tests that render real http4k contracts, validate them against the OpenAPI 3.0 / 3.1 schemas and
+  compare them with approved documents.

@@ -32,3 +32,22 @@ together with a changelog entry.
 ## Tests
 
 Every change needs tests. Run `./gradlew build` before opening a pull request.
+
+## Golden files
+
+Generated OpenAPI documents are checked against approved JSON files in `tests/src/test/resources/golden`. A
+golden test renders a real http4k `contract { }`, validates the document against the bundled official OpenAPI
+3.0 or 3.1 schema (nothing is fetched from the network), and compares its canonical form (sorted keys, 2-space
+indent, LF) with the approved file.
+
+If a document changes on purpose, rewrite the approved files locally and review the diff like code:
+
+```bash
+./gradlew :tests:check -PapproveGolden=true
+```
+
+Approving is refused when the `CI` environment variable is set, and it never writes a document that is invalid
+or renders differently on a second run. Never edit an approved file by hand. A failing run writes the actual
+output to `tests/build/golden-received`. When a version entry legitimately renders differently, approval
+writes `<name>.current.json` or `<name>.newest.json` next to the shared file; such a file exists only while
+that entry differs.

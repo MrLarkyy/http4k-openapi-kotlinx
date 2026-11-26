@@ -45,6 +45,7 @@ The `tests` module holds cross-module tests and is not published.
 ./gradlew testCurrent   # one matrix entry (testNewest likewise)
 ./gradlew apiCheck       # checkKotlinAbi: verify the public API against the committed dumps
 ./gradlew apiDump        # updateKotlinAbi: update the dumps, only for a deliberate API change
+./gradlew :tests:check -PapproveGolden=true   # rewrite approved golden files (refused on CI)
 ```
 
 ## License
