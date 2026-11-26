@@ -21,6 +21,7 @@ object OpenApiValidator {
 
     private const val IRI_PREFIX = "https://spec.openapis.org/oas/"
     private const val RESOURCE_PREFIX = "openapi-schemas/oas/"
+    private const val OAS_DIALECT = "https://spec.openapis.org/oas/3.1/dialect/2024-11-10"
     private const val JSON_SCHEMA_ORG_HTTP = "http://json-schema.org/"
     private const val JSON_SCHEMA_ORG_HTTPS = "https://json-schema.org/"
 
@@ -43,14 +44,16 @@ object OpenApiValidator {
         spec: OpenApiSpec,
         document: String,
     ) {
-        checkVersion(spec, document)
-        val raw = schema(spec).validate(document, InputFormat.JSON)
+        val root = checkVersion(spec, document)
+        val anyDialect = spec.anyDialectSchemaIri?.takeIf { declaresForeignDialect(root) }
+        val schemaIri = anyDialect ?: spec.schemaIri
+        val raw = (if (anyDialect != null) load(anyDialect) else schema(spec)).validate(document, InputFormat.JSON)
         val errors = raw.sortedWith(compareBy({ it.instanceLocation.toString() }, { it.message }))
         if (errors.isEmpty()) return
         val listed = errors.take(MAX_ERRORS).joinToString("\n") { "  ${it.instanceLocation}: ${it.message}" }
         val omitted = if (errors.size > MAX_ERRORS) "\n  ... ${errors.size - MAX_ERRORS} more" else ""
         throw AssertionFailedError(
-            "Document is not valid ${spec.name} (${spec.schemaIri}): ${errors.size} error(s)\n$listed$omitted",
+            "Document is not valid ${spec.name} ($schemaIri): ${errors.size} error(s)\n$listed$omitted",
         )
     }
 
@@ -58,10 +61,15 @@ object OpenApiValidator {
 
     private fun schema(spec: OpenApiSpec): Schema = checkNotNull(schemas[spec]).value
 
+    private fun declaresForeignDialect(root: JsonObject): Boolean {
+        val dialect = (root["jsonSchemaDialect"] as? JsonPrimitive)?.takeIf { it.isString }?.content
+        return dialect != null && dialect != OAS_DIALECT
+    }
+
     private fun checkVersion(
         spec: OpenApiSpec,
         document: String,
-    ) {
+    ): JsonObject {
         val root =
             try {
                 Json.parseToJsonElement(document)
@@ -75,6 +83,7 @@ object OpenApiValidator {
                     "but ${spec.name} expects ${spec.versionPrefix}x",
             )
         }
+        return root as JsonObject
     }
 
     private fun registry(): SchemaRegistry {

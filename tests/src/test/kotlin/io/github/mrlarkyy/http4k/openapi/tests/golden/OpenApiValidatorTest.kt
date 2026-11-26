@@ -21,6 +21,19 @@ class OpenApiValidatorTest {
     }
 
     @Test
+    fun `3_1 document with another json schema dialect is validated without the openapi dialect`() {
+        val other =
+            minimal(
+                "3.1.0",
+            ).replace("{\"openapi\"", "{\"jsonSchemaDialect\":\"https://json-schema.org/draft/2020-12/schema\",\"openapi\"")
+
+        OpenApiValidator.validate(OpenApiSpec.V3_1, other)
+        assertFailsWith<AssertionFailedError> {
+            OpenApiValidator.validate(OpenApiSpec.V3_1, other.replace("\"info\":{\"title\":\"t\",\"version\":\"1\"},", ""))
+        }
+    }
+
+    @Test
     fun `missing info fails for both versions`() {
         for ((spec, version) in listOf(OpenApiSpec.V3_0 to "3.0.3", OpenApiSpec.V3_1 to "3.1.0")) {
             val failure =
