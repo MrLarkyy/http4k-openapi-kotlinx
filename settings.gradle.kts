@@ -15,3 +15,5 @@ dependencyResolutionManagement {
 }
 
 rootProject.name = "http4k-openapi-kotlinx"
+
+include(":core", ":http4k", ":tests")

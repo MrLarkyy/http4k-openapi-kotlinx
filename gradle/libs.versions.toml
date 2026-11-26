@@ -9,8 +9,8 @@
 
 [versions]
 kotlin = "2.4.21"
-kotlin-api = "2.1"
-kotlin-stdlib-lowest = "2.1.0"
+kotlin-api = "2.2"
+kotlin-stdlib-lowest = "2.2.0"
 jdk = "21"
 http4k-lowest = "6.0.0.0"
 http4k-current = "6.61.0.0"
