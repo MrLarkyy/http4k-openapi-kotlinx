@@ -1,0 +1,38 @@
+# Version catalog, the single place for versions.
+#
+# http4k and kotlinx-serialization have three entries each:
+#   lowest  - the supported lower bound; published modules compile against it and their POMs declare it.
+#             Raising a "-lowest" entry is a breaking change for consumers.
+#   current - the version the project is developed against.
+#   newest  - the newest released version, bumped deliberately (never a dynamic version).
+# The build runs every test suite against all three entries.
+
+[versions]
+kotlin = "2.4.21"
+kotlin-api = "2.1"
+kotlin-stdlib-lowest = "2.1.0"
+jdk = "21"
+http4k-lowest = "6.0.0.0"
+http4k-current = "6.61.0.0"
+http4k-newest = "6.61.0.0"
+kotlinx-serialization-lowest = "1.8.0"
+kotlinx-serialization-current = "1.13.0"
+kotlinx-serialization-newest = "1.13.0"
+ktlint = "1.8.0"
+ktlint-gradle = "14.2.0"
+bcv = "0.18.2"
+junit = "6.1.3"
+
+[libraries]
+kotlinx-serialization-core = { module = "org.jetbrains.kotlinx:kotlinx-serialization-core", version.ref = "kotlinx-serialization-lowest" }
+kotlinx-serialization-json = { module = "org.jetbrains.kotlinx:kotlinx-serialization-json", version.ref = "kotlinx-serialization-lowest" }
+http4k-core = { module = "org.http4k:http4k-core", version.ref = "http4k-lowest" }
+http4k-api-openapi = { module = "org.http4k:http4k-api-openapi", version.ref = "http4k-lowest" }
+http4k-format-kotlinx-serialization = { module = "org.http4k:http4k-format-kotlinx-serialization", version.ref = "http4k-lowest" }
+junit-bom = { module = "org.junit:junit-bom", version.ref = "junit" }
+junit-platform-launcher = { module = "org.junit.platform:junit-platform-launcher" }
+kotlin-gradle-plugin = { module = "org.jetbrains.kotlin:kotlin-gradle-plugin", version.ref = "kotlin" }
+ktlint-gradle-plugin = { module = "org.jlleitschuh.gradle:ktlint-gradle", version.ref = "ktlint-gradle" }
+
+[plugins]
+bcv = { id = "org.jetbrains.kotlinx.binary-compatibility-validator", version.ref = "bcv" }
