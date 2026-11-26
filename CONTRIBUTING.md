@@ -22,8 +22,10 @@ consumers and needs a changelog entry.
 
 ## Public API
 
-`apiCheck` must stay green. Run `./gradlew apiDump` only for a deliberate API change and commit the updated
-dump together with a changelog entry.
+The Kotlin Gradle plugin ABI validation guards the public API of `core` and `http4k`; the dumps live in
+`<module>/api`. `apiCheck` (alias of `checkKotlinAbi`) must stay green and runs as part of `check`. Run
+`./gradlew apiDump` (alias of `updateKotlinAbi`) only for a deliberate API change and commit the updated dump
+together with a changelog entry.
 
 ## Tests
 

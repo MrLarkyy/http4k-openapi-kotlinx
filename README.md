@@ -33,11 +33,11 @@ The `tests` module holds cross-module tests and is not published.
 ## Build
 
 ```bash
-./gradlew build          # compile, ktlint, tests on all version entries, API check
+./gradlew build          # compile, ktlint, tests on all version entries, API check (Kotlin ABI validation)
 ./gradlew ktlintFormat   # fix formatting
 ./gradlew testCurrent   # one matrix entry (testNewest likewise)
-./gradlew apiCheck       # verify the public API against the committed dumps
-./gradlew apiDump        # update the dumps, only for a deliberate API change
+./gradlew apiCheck       # checkKotlinAbi: verify the public API against the committed dumps
+./gradlew apiDump        # updateKotlinAbi: update the dumps, only for a deliberate API change
 ```
 
 ## License

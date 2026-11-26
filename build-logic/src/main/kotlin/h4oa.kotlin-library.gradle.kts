@@ -1,4 +1,6 @@
 import io.github.mrlarkyy.http4k.openapi.build.LibraryPublishingExtension
+import org.jetbrains.kotlin.gradle.dsl.abi.BinariesSource
+import org.jetbrains.kotlin.gradle.dsl.abi.ExperimentalAbiValidation
 
 plugins {
     id("h4oa.kotlin-jvm")
@@ -13,6 +15,29 @@ val library = extensions.create<LibraryPublishingExtension>("h4oaLibrary")
 kotlin {
     explicitApi()
     coreLibrariesVersion = catalog.findVersion("kotlin-stdlib-lowest").get().requiredVersion
+
+    @OptIn(ExperimentalAbiValidation::class)
+    abiValidation {
+        binariesSource.set(BinariesSource.MAIN_COMPILATION)
+        referenceDumpDir.set(layout.projectDirectory.dir("api"))
+    }
+}
+
+// Stable names for the Kotlin ABI validation tasks (checkKotlinAbi, updateKotlinAbi).
+tasks.register("apiCheck") {
+    group = "verification"
+    description = "Verifies the public API against the committed dump (alias of checkKotlinAbi)."
+    dependsOn("checkKotlinAbi")
+}
+
+tasks.register("apiDump") {
+    group = "other"
+    description = "Updates the committed public API dump (alias of updateKotlinAbi)."
+    dependsOn("updateKotlinAbi")
+}
+
+tasks.named("check") {
+    dependsOn("apiCheck")
 }
 
 java {
