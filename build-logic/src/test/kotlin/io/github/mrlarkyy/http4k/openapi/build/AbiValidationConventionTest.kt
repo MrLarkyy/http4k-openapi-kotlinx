@@ -55,7 +55,8 @@ class AbiValidationConventionTest {
         val failure = runner("apiCheck").buildAndFail()
 
         assertContains(failure.output, ":checkKotlinAbi")
-        assertContains(failure.output, "probe")
+        assertContains(failure.output, "ProbeKt")
+        assertContains(failure.output, "probe ()I")
     }
 
     @Test

@@ -19,7 +19,8 @@ Formatting is enforced by ktlint (`ktlint_official`). Run `./gradlew ktlintForma
 
 All versions live in `gradle/libs.versions.toml`. Raising a `-lowest` entry is a breaking change for
 consumers and needs a changelog entry. Library code may only use http4k and kotlinx.serialization API that is
-present across the whole supported range; `Http4kLinkageTest` fails otherwise.
+present across the whole supported range; `Http4kLinkageTest` fails otherwise. It scans the classes of the
+`http4k` module only.
 
 ## Public API
 

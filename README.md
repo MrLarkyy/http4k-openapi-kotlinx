@@ -22,8 +22,11 @@ current and newest ones.
 
 http4k changed the `ApiInfo` constructor in 6.54.0.0, so code compiled against an earlier version does not link
 against a later one. Construct `ApiInfo` in your own code against the http4k version you use; the library never
-constructs it. A linkage test checks the http4k and kotlinx.serialization references of the library against the
-lowest, current and newest versions.
+constructs it. A linkage test checks the http4k and kotlinx.serialization references of the `http4k` module
+against the lowest, current and newest versions.
+
+http4k 6.54.0.0 and newer pull in kotlin-stdlib 2.4.0 and kotlinx-serialization 1.11.0, so projects that stay on
+Kotlin 2.2 need an older http4k.
 
 ## Modules
 

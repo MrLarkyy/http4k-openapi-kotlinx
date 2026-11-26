@@ -2,12 +2,17 @@ package io.github.mrlarkyy.http4k.openapi.http4k.linkage
 
 import org.objectweb.asm.ClassReader
 import org.objectweb.asm.ClassVisitor
+import org.objectweb.asm.FieldVisitor
 import org.objectweb.asm.Handle
+import org.objectweb.asm.Label
 import org.objectweb.asm.MethodVisitor
 import org.objectweb.asm.Opcodes
+import org.objectweb.asm.Type
+import java.lang.reflect.Modifier
 
 /**
- * Checks that the members a compiled class refers to exist in the classes of the running classpath.
+ * Checks that the classes and members a compiled class refers to exist on the running classpath, and that
+ * it implements the abstract methods of the supertypes it extends.
  * Resolution is by owner, name and exact descriptor, as the JVM links them; access flags are not checked.
  */
 internal object LinkageCheck {
@@ -30,6 +35,25 @@ internal object LinkageCheck {
                 found += MemberReference(owner, name, descriptor, kind)
             }
         }
+
+        fun addType(type: Type) {
+            when (type.sort) {
+                Type.ARRAY -> {
+                    addType(type.elementType)
+                }
+
+                Type.OBJECT -> {
+                    add(type.internalName, "", "", MemberReference.Kind.CLASS)
+                }
+
+                Type.METHOD -> {
+                    type.argumentTypes.forEach(::addType)
+                    addType(type.returnType)
+                }
+            }
+        }
+
+        fun addClass(internalName: String) = addType(Type.getObjectType(internalName))
 
         fun addHandle(handle: Handle) {
             val kind =
@@ -70,19 +94,74 @@ internal object LinkageCheck {
                     vararg bootstrapMethodArguments: Any?,
                 ) {
                     addHandle(bootstrapMethodHandle)
-                    bootstrapMethodArguments.filterIsInstance<Handle>().forEach(::addHandle)
+                    bootstrapMethodArguments.forEach {
+                        when (it) {
+                            is Handle -> addHandle(it)
+                            is Type -> addType(it)
+                        }
+                    }
+                }
+
+                override fun visitTypeInsn(
+                    opcode: Int,
+                    type: String,
+                ) = addClass(type)
+
+                override fun visitMultiANewArrayInsn(
+                    descriptor: String,
+                    numDimensions: Int,
+                ) = addType(Type.getType(descriptor))
+
+                override fun visitLdcInsn(value: Any?) {
+                    if (value is Type) addType(value)
+                }
+
+                override fun visitTryCatchBlock(
+                    start: Label,
+                    end: Label,
+                    handler: Label,
+                    type: String?,
+                ) {
+                    if (type != null) addClass(type)
                 }
             }
 
         ClassReader(classBytes).accept(
             object : ClassVisitor(ASM_API) {
+                override fun visit(
+                    version: Int,
+                    access: Int,
+                    name: String,
+                    signature: String?,
+                    superName: String?,
+                    interfaces: Array<out String>?,
+                ) {
+                    if (superName != null) addClass(superName)
+                    interfaces?.forEach(::addClass)
+                }
+
+                override fun visitField(
+                    access: Int,
+                    name: String,
+                    descriptor: String,
+                    signature: String?,
+                    value: Any?,
+                ): FieldVisitor? {
+                    addType(Type.getType(descriptor))
+                    return null
+                }
+
                 override fun visitMethod(
                     access: Int,
                     name: String,
                     descriptor: String,
                     signature: String?,
                     exceptions: Array<out String>?,
-                ): MethodVisitor = methodVisitor
+                ): MethodVisitor {
+                    addType(Type.getMethodType(descriptor))
+                    exceptions?.forEach(::addClass)
+                    return methodVisitor
+                }
             },
             0,
         )
@@ -116,11 +195,66 @@ internal object LinkageCheck {
         return result
     }
 
+    /**
+     * Abstract methods of [className]'s supertypes whose owner starts with one of [ownerPrefixes] that the
+     * class does not implement, as the JVM would fail with an `AbstractMethodError` on a call. Abstract
+     * classes and interfaces are skipped; a class that cannot be loaded is reported as such.
+     */
+    fun unimplemented(
+        className: String,
+        ownerPrefixes: List<String>,
+        classLoader: ClassLoader,
+    ): List<String> {
+        val type =
+            try {
+                Class.forName(className.replace('/', '.'), false, classLoader)
+            } catch (error: ClassNotFoundException) {
+                return listOf("class $className cannot be loaded: $error")
+            } catch (error: LinkageError) {
+                return listOf("class $className cannot be loaded: $error")
+            }
+        if (type.isInterface || Modifier.isAbstract(type.modifiers)) return emptyList()
+        return try {
+            val hierarchy = hierarchy(type, interfacesFirst = false).toList()
+            val implemented =
+                hierarchy
+                    .flatMap { owner -> owner.declaredMethods.filterNot { Modifier.isAbstract(it.modifiers) } }
+                    .map { it.name + methodDescriptor(it.parameterTypes, it.returnType) }
+                    .toSet()
+            hierarchy
+                .filter { owner -> ownerPrefixes.any { owner.name.replace('.', '/').startsWith(it) } }
+                .flatMap { owner ->
+                    owner.declaredMethods
+                        .filter { Modifier.isAbstract(it.modifiers) }
+                        .map { owner.name.replace('.', '/') to it.name + methodDescriptor(it.parameterTypes, it.returnType) }
+                }.filter { (_, signature) -> signature !in implemented }
+                .map { (owner, signature) -> "abstract method $owner.$signature is not implemented by $className" }
+                .distinct()
+                .sorted()
+        } catch (error: LinkageError) {
+            listOf("class $className cannot be inspected: $error")
+        }
+    }
+
     private fun resolves(
         type: Class<*>,
         reference: MemberReference,
     ): Boolean =
+        try {
+            resolvesUnchecked(type, reference)
+        } catch (_: LinkageError) {
+            false
+        }
+
+    private fun resolvesUnchecked(
+        type: Class<*>,
+        reference: MemberReference,
+    ): Boolean =
         when (reference.kind) {
+            MemberReference.Kind.CLASS -> {
+                true
+            }
+
             MemberReference.Kind.CONSTRUCTOR -> {
                 type.declaredConstructors.any { methodDescriptor(it.parameterTypes, Void.TYPE) == reference.descriptor }
             }

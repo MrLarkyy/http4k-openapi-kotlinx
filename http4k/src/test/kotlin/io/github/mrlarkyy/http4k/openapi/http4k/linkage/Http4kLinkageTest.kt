@@ -1,5 +1,6 @@
 package io.github.mrlarkyy.http4k.openapi.http4k.linkage
 
+import org.objectweb.asm.ClassReader
 import java.io.File
 import kotlin.test.Test
 import kotlin.test.assertEquals
@@ -22,14 +23,16 @@ class Http4kLinkageTest {
                 "System property h4oa.linkage.classes is not set; the http4k build wiring is lost"
             }.split(File.pathSeparator).filter { it.isNotEmpty() }.map(::File)
 
-        val missing =
+        val classes =
             roots
                 .filter { it.isDirectory }
                 .flatMap { root -> root.walkTopDown().filter { it.isFile && it.extension == "class" }.toList() }
                 .sortedBy { it.path }
-                .flatMap { LinkageCheck.references(it.readBytes(), prefixes) }
-                .toSet()
-                .let { LinkageCheck.missing(it, classLoader) }
+                .map { it.readBytes() }
+
+        val missing =
+            LinkageCheck.missing(classes.flatMap { LinkageCheck.references(it, prefixes) }.toSet(), classLoader) +
+                classes.flatMap { LinkageCheck.unimplemented(ClassReader(it).className, prefixes, classLoader) }
 
         val version = runtimeHttp4k.joinToString(".")
         assertTrue(missing.isEmpty(), "Unresolved references against http4k $version:\n${missing.joinToString("\n")}")
