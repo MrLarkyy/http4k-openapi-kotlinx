@@ -1,12 +1,15 @@
 plugins {
     id("h4oa.kotlin-jvm")
     id("h4oa.version-matrix")
+    id("org.jetbrains.kotlin.plugin.serialization")
 }
 
 dependencies {
     testImplementation(project(":core"))
     testImplementation(project(":http4k"))
     testImplementation(libs.kotlinx.serialization.json)
+    // http4k's auto body lenses use kotlin.reflect.full, which http4k does not bring in transitively.
+    testImplementation(kotlin("reflect"))
     testImplementation(libs.json.schema.validator)
     testImplementation(libs.java.diff.utils)
 }

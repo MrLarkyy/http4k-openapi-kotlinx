@@ -1,0 +1,186 @@
+{
+  "components": {
+    "schemas": {
+      "Inner": {
+        "properties": {
+          "id": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "id"
+        ],
+        "type": "object"
+      },
+      "Item": {
+        "properties": {
+          "big": {
+            "type": "integer"
+          },
+          "count": {
+            "type": "integer"
+          },
+          "inner": {
+            "$ref": "#/components/schemas/Inner"
+          },
+          "name": {
+            "type": "string"
+          },
+          "ok": {
+            "type": "boolean"
+          },
+          "price": {
+            "type": "number"
+          }
+        },
+        "required": [
+          "name",
+          "count",
+          "big",
+          "price",
+          "ok",
+          "inner"
+        ],
+        "type": "object"
+      }
+    },
+    "securitySchemes": {}
+  },
+  "info": {
+    "description": "",
+    "title": "golden",
+    "version": "v1"
+  },
+  "openapi": "3.1.0",
+  "paths": {
+    "/items": {
+      "post": {
+        "deprecated": false,
+        "description": "Creates an item from the request body.",
+        "operationId": "postItems",
+        "parameters": [],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "example": {
+                "big": 4000000000,
+                "count": 3,
+                "inner": {
+                  "id": "i-1"
+                },
+                "name": "pen",
+                "ok": true,
+                "price": 1.5
+              },
+              "schema": {
+                "$ref": "#/components/schemas/Item"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "example": {
+                  "big": 4000000000,
+                  "count": 3,
+                  "inner": {
+                    "id": "i-1"
+                  },
+                  "name": "pen",
+                  "ok": true,
+                  "price": 1.5
+                },
+                "schema": {
+                  "$ref": "#/components/schemas/Item"
+                }
+              }
+            },
+            "description": "OK"
+          }
+        },
+        "security": [],
+        "summary": "Create an item",
+        "tags": [
+          ""
+        ]
+      }
+    },
+    "/items/{id}": {
+      "get": {
+        "deprecated": false,
+        "description": "Returns one item by id.",
+        "operationId": "getItems_id",
+        "parameters": [
+          {
+            "description": "Maximum number of results",
+            "in": "query",
+            "name": "limit",
+            "required": false,
+            "schema": {
+              "type": "integer"
+            }
+          },
+          {
+            "description": "Correlation id",
+            "in": "header",
+            "name": "X-Trace",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "description": "The item id",
+            "in": "path",
+            "name": "id",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "example": {
+                  "big": 4000000000,
+                  "count": 3,
+                  "inner": {
+                    "id": "i-1"
+                  },
+                  "name": "pen",
+                  "ok": true,
+                  "price": 1.5
+                },
+                "schema": {
+                  "$ref": "#/components/schemas/Item"
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "404": {
+            "content": {},
+            "description": "No such item"
+          }
+        },
+        "security": [],
+        "summary": "Fetch an item",
+        "tags": [
+          ""
+        ]
+      }
+    }
+  },
+  "servers": [
+    {
+      "description": "",
+      "url": "/"
+    }
+  ],
+  "tags": []
+}

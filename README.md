@@ -5,8 +5,50 @@ Generates OpenAPI documents for [http4k](https://www.http4k.org/) contracts from
 
 ## Status
 
-Pre-alpha. The build, module layout and supported version ranges are in place; schema generation is not
-implemented yet, so there is no quick start. The public API is empty and will be declared by later releases.
+Pre-alpha. `KotlinxApiRenderer` builds the schemas of simple `@Serializable` classes for http4k contracts; more
+property kinds follow in later releases.
+
+## Quick start
+
+Pass the renderer to `OpenApi3` and give every body an example. http4k only asks for a schema of the example of a
+body, so a body needs an example.
+
+```kotlin
+@Serializable
+data class Inner(val id: String)
+
+@Serializable
+data class Item(val name: String, val count: Int, val inner: Inner)
+
+val item = Item("pen", 3, Inner("i-1"))
+val lens = Body.auto<Item>().toLens()   // org.http4k.format.KotlinxSerialization.auto
+
+val handler =
+    contract {
+        renderer = OpenApi3(apiInfo, KotlinxSerialization, apiRenderer = KotlinxApiRenderer(KotlinxSerialization))
+        descriptionPath = "/openapi.json"
+        routes +=
+            "/items" meta {
+                receiving(lens to item)
+                returning(OK, lens to item)
+            } bindContract POST to { _: Request -> Response(OK) }
+    }
+```
+
+The document then holds one schema for each type under `components/schemas`, named after the serial name without
+its package (`Item` and `Inner` above), and the bodies refer to it with a `$ref`. A type used by several routes is
+defined once. `required` lists the properties in declaration order.
+
+### What is supported
+
+- Classes and objects whose properties are `String`, `Boolean`, `Int`, `Long` or `Double`, or further such classes
+  (rendered as `$ref`; recursive classes work).
+- An example of a sealed subtype is rendered as that concrete class, without a discriminator, for now.
+- Examples that are JSON elements, or whose type is not a class or object, are rendered by http4k itself.
+
+Everything else throws an `IllegalArgumentException` that names the serial name and the property: nullable and
+optional properties, enums, collections, maps, polymorphism and contextual serializers. These are planned. A `Json`
+with a naming strategy is rejected too.
 
 ## Supported versions
 

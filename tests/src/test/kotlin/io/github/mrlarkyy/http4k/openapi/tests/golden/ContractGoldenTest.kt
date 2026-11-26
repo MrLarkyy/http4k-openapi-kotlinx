@@ -1,5 +1,6 @@
 package io.github.mrlarkyy.http4k.openapi.tests.golden
 
+import io.github.mrlarkyy.http4k.openapi.http4k.KotlinxApiRenderer
 import org.http4k.contract.ContractRoute
 import org.http4k.contract.div
 import org.http4k.contract.meta
@@ -12,6 +13,7 @@ import org.http4k.core.Response
 import org.http4k.core.Status.Companion.CREATED
 import org.http4k.core.Status.Companion.NOT_FOUND
 import org.http4k.core.Status.Companion.OK
+import org.http4k.format.KotlinxSerialization
 import org.http4k.lens.Header
 import org.http4k.lens.Path
 import org.http4k.lens.Query
@@ -28,6 +30,27 @@ class ContractGoldenTest {
     @Test
     fun `basic contract as openapi 3_1`() {
         GoldenOpenApi.verify("contract-basic-3.1", OpenApiSpec.V3_1, { ContractFixtures.render(OpenApiSpec.V3_1, basicContract()) })
+    }
+
+    @Test
+    fun `serializable contract as openapi 3_0`() {
+        verifySerializable("contract-serializable-3.0", OpenApiSpec.V3_0)
+    }
+
+    @Test
+    fun `serializable contract as openapi 3_1`() {
+        verifySerializable("contract-serializable-3.1", OpenApiSpec.V3_1)
+    }
+
+    private fun verifySerializable(
+        name: String,
+        spec: OpenApiSpec,
+    ) {
+        GoldenOpenApi.verify(
+            name,
+            spec,
+            { ContractFixtures.render(spec, SerializableContract.serializableRoutes(), KotlinxApiRenderer(KotlinxSerialization)) },
+        )
     }
 
     private fun basicContract(): List<ContractRoute> {
